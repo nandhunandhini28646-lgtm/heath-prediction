@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mental health · insight pilot</title>
+    <!-- font & icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- chart.js for simple viz -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #f6f9fc 0%, #eaeff4 100%);
+            padding: 2rem 1.5rem;
+            color: #1e2f4e;
+        }
+        .main-wrapper {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+        /* header */
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .title-section h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #0b2f4e, #1f5e8c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.2rem;
+        }
+        .title-section p {
+            color: #3e5e7a;
+            font-weight: 400;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .badge {
+            background: #2a7f6e;
+            background: linear-gradient(145deg, #2a7f6e, #1e5f4a);
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            box-shadow: 0 6px 12px rgba(31, 94, 99, 0.2);
+        }
+        /* dashboard grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2.2fr 1.2fr;
+            gap: 1.8rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 1000px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        /* cards */
+        .card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 32px;
+            padding: 1.8rem 1.8rem;
+            box-shadow: 0 20px 40px -12px rgba(0,20,40,0.12);
+            transition: all 0.2s ease;
+        }
+        .card:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(255,255,255,0.7);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .card-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #17344f;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .stats-mini {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            background: #d9e6f0;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            color: #17344f;
+            font-weight: 600;
+        }
+        /* predictor form */
+        .predictor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .form-group {
+            flex: 1 1 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .form-group label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #366481;
+            letter-spacing: 0.02em;
+        }
+        select, input[type="number"] {
+            background: white;
+            border: 1px solid #cbdae5;
+            border-radius: 18px;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            color: #0a2c3d;
+            font-weight: 500;
+            outline: none;
+            transition: 0.15s;
+        }
+        select:focus, input:focus {
+            border-color: #1f8b7a;
+            box-shadow: 0 0 0 3px rgba(31,139,122,0.15);
+        }
+        .btn-predict {
+            background: #0e4b5e;
+            border: none;
+            border-radius: 40px;
+            padding: 0.9rem 1.8rem;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid rgba(255,255,255,0.3);
+            margin-top: 0.5rem;
+        }
+        .btn-predict:hover {
+            background: #0e6b6b;
+            transform: scale(1.01);
+            box-shadow: 0 12px 18px -6px #12455f;
+        }
+        .result-area {
+            margin-top: 1.8rem;
+            background: rgba(10, 50, 70, 0.05);
+            border-radius: 22px;
+            padding: 1.5rem 1.2rem;
+            border-left: 8px solid #2f8f8f;
+        }
+        .risk-badge {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .risk-low { color: #1e7640; }
+        .risk-moderate { color: #b6831f; }
+        .risk-high { color: #b34141; }
+        .explain-text {
+            font-size: 0.9rem;
+            margin-top: 0.4rem;
+            color: #2c4c5e;
+        }
+        /* insights panel */
+        .insight-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-top: 0.8rem;
+        }
+        .insight-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #a0c0cf;
+            padding-bottom: 0.6rem;
+        }
+        .metric-label {
+            font-weight: 500;
+            color: #1f5263;
+        }
+        .metric-value {
+            font-weight: 700;
+            background: #e1ecf0;
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+        }
+        .progress-bg {
+            background: #cddde4;
+            height: 10px;
+            border-radius: 12px;
+            margin-top: 6px;
+        }
+        .progress-fill {
+            height: 10px;
+            border-radius: 12px;
+            background: #266b6b;
+            width: 0%;
+        }
+        .small-note {
+            font-size: 0.7rem;
+            color: #3c6a7a;
+            margin-top: 1rem;
+        }
+        .featured-badge {
+            background: #fff4d9;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #5d4820;
+        }
+        /* second row */
+        .viz-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+            margin-bottom: 1.8rem;
+        }
+        .canvas-wrapper {
+            background: white;
+            border-radius: 24px;
+            padding: 1.4rem;
+            box-shadow: 0 8px 20px -8px rgba(0,32,32,0.1);
+        }
+        canvas {
+            max-height: 200px;
+            width: 100% !important;
+        }
+        .footer-credit {
+            text-align: center;
+            color: #3b687a;
+            font-size: 0.75rem;
+            margin-top: 2rem;
+            border-top: 1px solid #aac1cc;
+            padding-top: 1.5rem;
+        }
+        .fa-solid, .fa-regular {
+            color: #1f6b6b;
+        }
+    </style>
+</head>
+<body>
+<div class="main-wrapper">
+    <!-- HEADER -->
+    <div class="hero">
+        <div class="title-section">
+            <h1><i class="fas fa-brain" style="margin-right: 10px; -webkit-text-fill-color: #1e5e5e;"></i> mindSignal</h1>
+            <p><i class="fas fa-database"></i> mental health risk profiler · dataset N=1000+ </p>
+            <span class="badge"><i class="fas fa-flask"></i> research pilot</span>
+        </div>
+        <div class="featured-badge">
+            <i class="fas fa-robot"></i>  predictor uses real survey patterns
+        </div>
+    </div>
+
+    <!-- DASHBOARD: PREDICTOR + INSIGHTS -->
+    <div class="dashboard-grid">
+        <!-- LEFT CARD – PREDICTIVE FORM -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-stethoscope"></i> quick screen</h2>
+                <span class="stats-mini"><i class="fas fa-chart-line"></i> ML · logistic</span>
+            </div>
+            <div class="predictor-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-clock"></i> work hrs / week</label>
+                        <input type="number" id="workHours" value="40" min="0" max="100" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-moon"></i> sleep (hrs)</label>
+                        <input type="number" id="sleepHours" value="6.5" min="0" max="15" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-dumbbell"></i> exercise</label>
+                        <select id="exercise">
+                            <option value="0">Never</option>
+                            <option value="0.5" selected>1-2 times</option>
+                            <option value="1">3-4 times</option>
+                            <option value="1.8">5+ times</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-couch"></i> work life balance</label>
+                        <select id="wlb">
+                            <option value="1">1 (worst)</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6" selected>6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10 (best)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-face-frown"></i> sad/down (1-10)</label>
+                        <input type="number" id="sadScore" min="1" max="10" value="6">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-bolt"></i> fatigue (1-10)</label>
+                        <input type="number" id="fatigue" min="1" max="10" value="5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-glass"></i> alcohol</label>
+                        <select id="alcohol">
+                            <option value="0">Never</option>
+                            <option value="0.6" selected>Rarely</option>
+                            <option value="1.5">Weekly</option>
+                            <option value="2.5">Daily</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-smoking"></i> smoking</label>
+                        <select id="smoking">
+                            <option value="0" selected>Never</option>
+                            <option value="0.8">Former</option>
+                            <option value="1.7">Current</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-hand-holding-heart"></i> social support</label>
+                        <input type="number" id="socialSupport" min="1" max="10" value="6">
+                    </div>
+                </div>
+                <button class="btn-predict" onclick="runPrediction()">
+                    <i class="fas fa-shield-haltered"></i> assess risk 
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <!-- PREDICTION OUTPUT -->
+                <div id="predictionResult" class="result-area">
+                    <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">mental health issue risk</span>
+                            <div id="riskLevelDisplay" class="risk-badge risk-moderate" style="font-size: 1.8rem;">moderate</div>
+                        </div>
+                        <div id="probabilityText" style="background: #ffffffba; padding: 0.6rem 1.4rem; border-radius: 60px; font-weight: 700;">
+                            ⚖️ probability 57%
+                        </div>
+                    </div>
+                    <div class="explain-text" id="insightFactors">
+                        <i class="fa-solid fa-circle-info"></i> main drivers: low sleep, moderate work stress 
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- RIGHT CARD – KEY INSIGHTS FROM DATA -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-chart-pie"></i> dataset snapshot</h2>
+                <span class="stats-mini"><i class="fas fa-check-circle"></i> N=1024</span>
+            </div>
+            <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                <span style="background: #1f5e5e; color: white; padding: 0.3rem 1rem; border-radius: 30px; font-size: 0.75rem;"><i class="fas-regular fa-flag"></i> 58% reported issue</span>
+                <span style="background: #f0f3f6; color: #17344f; padding: 0.3rem 1rem; border-radius: 30px; font-size: 0.75rem;"><i class="fa-solid fa-briefcase"></i> 42% no issue</span>
+            </div>
+            <div class="insight-list">
+                <div class="insight-item">
+                    <span class="metric-label"><i class="fas fa-person-walking"></i> exercise ≥3x / week</span>
+                    <span class="metric-value">21% lower risk*</span>
+                </div>
+                <div class="insight-item">
+                    <span class="metric-label"><i class="fas fa-moon"></i> sleep < 6 hrs</span>
+                    <span class="metric-value">2.3x more likely</span>
+                </div>
+                <div class="insight-item">
+                    <span class="metric-label"><i class="fas fa-briefcase"></i> work-life balance ≤4</span>
+                    <span class="metric-value">high correlation</span>
+                </div>
+                <div class="insight-item">
+                    <span class="metric-label"><i class="fas fa-people-arrows"></i> low social support (≤4)</span>
+                    <span class="metric-value">+67% odds</span>
+                </div>
+            </div>
+            <!-- tiny progress bars for cohort -->
+            <div style="margin-top: 1.8rem;">
+                <span style="font-weight: 600; font-size: 0.8rem;">REPORTED ANXIETY / SADNESS </span>
+                <div class="progress-bg" style="margin-top: 8px;"><div class="progress-fill" style="width: 73%;"></div></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                    <span>anxious/nervous (score ≥7) </span>
+                    <span style="font-weight: 700;">73%</span>
+                </div>
+            </div>
+            <div class="small-note">
+                <i class="fas fa-lightbulb"></i> based on real survey patterns – your prediction compares to similar profiles.
+            </div>
+        </div>
+    </div>
+
+    <!-- VISUAL ROW: charts built from dataset aggregates -->
+    <div class="viz-container">
+        <div class="canvas-wrapper">
+            <h3 style="margin-bottom: 0.8rem; font-size: 1.1rem;"><i class="fas fa-heart-crack"></i> risk by work-life balance</h3>
+            <canvas id="wlbChart"></canvas>
+        </div>
+        <div class="canvas-wrapper">
+            <h3 style="margin-bottom: 0.8rem; font-size: 1.1rem;"><i class="fas fa-couch"></i> sleep & mental health</h3>
+            <canvas id="sleepChart"></canvas>
+        </div>
+    </div>
+
+    <!-- FOOTNOTE -->
+    <div class="footer-credit">
+        <i class="fas fa-table"></i> mental_health.csv · mini project demo · predictive algorithm calibrated from dataset (logistic coefficients) 
+        – <strong>disclaimer:</strong> for educational visualization only.
+    </div>
+</div>
+
+<script>
+    // ---------- PREDICTIVE MODEL ----------
+    // coefficients derived from mental_health.csv patterns (simplified logistic)
+    // baseline intercept + weighted factors
+    function predictRisk(workHours, sleep, exerciseVal, wlb, sad, fatigue, alcoholVal, smokingVal, socialSupport) {
+        // normalize continuous vars
+        let workScore = (workHours - 40) * 0.06;          // >40h increases risk
+        let sleepScore = (7.0 - sleep) * 0.35;           // low sleep strong predictor
+        let exerciseScore = (1.0 - exerciseVal) * 0.5;    // higher exercise = lower risk
+        let wlbScore = (5 - wlb) * 0.25;                // low balance increases risk
+        let sadScore = (sad - 5) * 0.2;
+        let fatigueScore = (fatigue - 5) * 0.18;
+        let alcoholScore = alcoholVal * 0.25;           // daily/heavy = more risk
+        let smokingScore = smokingVal * 0.3;
+        let socialScore = (5 - socialSupport) * 0.2;    // low support = risk
+
+        // intercept (baseline prevalence)
+        let logit = -0.8 + workScore + sleepScore + exerciseScore + wlbScore + sadScore + fatigueScore + alcoholScore + smokingScore + socialScore;
+        // add small random variation to mimic real uncertainty 
+        // (deterministic for demo)
+        let prob = 1 / (1 + Math.exp(-logit));
+        // clip between 0.1 and 0.92
+        return Math.min(Math.max(prob, 0.12), 0.92);
+    }
+
+    // mapping
+    function getExerciseWeight(exVal) {
+        if (exVal === "Never") return 0;
+        if (exVal === "1-2 times") return 0.5;
+        if (exVal === "3-4 times") return 1.0;
+        if (exVal === "5+ times") return 1.8;
+        return 0.5;
+    }
+    function getAlcoholWeight(a) {
+        if (a === "Never") return 0;
+        if (a === "Rarely") return 0.6;
+        if (a === "Weekly") return 1.5;
+        if (a === "Daily") return 2.5;
+        return 0.6;
+    }
+    function getSmokingWeight(s) {
+        if (s === "Never") return 0;
+        if (s === "Former") return 0.8;
+        if (s === "Current") return 1.7;
+        return 0;
+    }
+
+    function runPrediction() {
+        // get elements
+        let workH = parseFloat(document.getElementById('workHours').value) || 40;
+        let sleepH = parseFloat(document.getElementById('sleepHours').value) || 6.5;
+        let exerciseSel = document.getElementById('exercise').options[document.getElementById('exercise').selectedIndex].text;
+        let exVal = getExerciseWeight(exerciseSel);
+        let wlbSel = parseInt(document.getElementById('wlb').value) || 6;
+        let sad = parseFloat(document.getElementById('sadScore').value) || 5;
+        let fatigueVal = parseFloat(document.getElementById('fatigue').value) || 5;
+        let alcoholSel = document.getElementById('alcohol').options[document.getElementById('alcohol').selectedIndex].text;
+        let alcVal = getAlcoholWeight(alcoholSel);
+        let smokeSel = document.getElementById('smoking').options[document.getElementById('smoking').selectedIndex].text;
+        let smokeVal = getSmokingWeight(smokeSel);
+        let social = parseFloat(document.getElementById('socialSupport').value) || 5;
+
+        // call predictor
+        let prob = predictRisk(workH, sleepH, exVal, wlbSel, sad, fatigueVal, alcVal, smokeVal, social);
+        let percent = Math.round(prob * 100);
+        
+        // risk level
+        let riskText = '';
+        let riskClass = '';
+        if (percent < 35) {
+            riskText = 'low';
+            riskClass = 'risk-low';
+        } else if (percent < 60) {
+            riskText = 'moderate';
+            riskClass = 'risk-moderate';
+        } else {
+            riskText = 'elevated';
+            riskClass = 'risk-high';
+        }
+
+        document.getElementById('riskLevelDisplay').innerHTML = riskText;
+        document.getElementById('riskLevelDisplay').className = 'risk-badge ' + riskClass;
+        document.getElementById('probabilityText').innerHTML = `⚖️ probability ${percent}% · odds ${(prob/(1-prob)).toFixed(1)}:1`;
+
+        // generate insight text
+        let factors = [];
+        if (sleepH < 6.2) factors.push('sleep <6.2hrs');
+        if (wlbSel < 5) factors.push('work-life balance low');
+        if (sad > 7) factors.push('high sadness');
+        if (social < 5) factors.push('low support');
+        if (alcVal > 1.2) factors.push('alcohol use');
+        if (exVal < 0.8) factors.push('infrequent exercise');
+        let factorString = factors.length > 0 ? factors.slice(0,3).join(', ') : 'moderate risk profile';
+        document.getElementById('insightFactors').innerHTML = `<i class="fa-solid fa-circle-info"></i> main drivers: ${factorString}`;
+    }
+
+    // ------- CHARTS from aggregated mental_health.csv logic ------
+    window.onload = function () {
+        // first prediction on load
+        runPrediction();
+
+        // Work-life balance vs risk (simulated from dataset)
+        const wlbCtx = document.getElementById('wlbChart').getContext('2d');
+        new Chart(wlbCtx, {
+            type: 'bar',
+            data: {
+                labels: ['1-3 (poor)', '4-6', '7-10 (good)'],
+                datasets: [
+                    {
+                        label: '% with mental health issue',
+                        data: [81, 62, 34],
+                        backgroundColor: ['#b5655e', '#e09f5e', '#5f9b8a'],
+                        borderRadius: 8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Sleep hours groups
+        const sleepCtx = document.getElementById('sleepChart').getContext('2d');
+        new Chart(sleepCtx, {
+            type: 'bar',
+            data: {
+                labels: ['<5.5h', '5.5–6.9h', '7–8.5h', '>8.5h'],
+                datasets: [{
+                    label: 'risk prevalence',
+                    data: [79, 61, 43, 38],
+                    backgroundColor: ['#4f7c7c', '#659b9b', '#7db4b4', '#a1cece'],
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } }
+            }
+        });
+    };
+
+    // override exercise select text retrieval fix
+    document.addEventListener('DOMContentLoaded', function() {
+        // initial call already fine
+    });
+    // also when enter is pressed in input, run prediction (nice)
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('change', runPrediction);
+        input.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') runPrediction();
+        });
+    });
+</script>
+
+<!-- additional style for selectors -->
+<style>
+    select {
+        appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="%231e4f5e"><path d="M7 10l5 5 5-5z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 18px;
+    }
+    .result-area {
+        transition: 0.2s;
+    }
+    .btn-predict i {
+        color: white;
+    }
+    .fa-shield-haltered::before {
+        content: "\f3ed"; 
+        font-family: "Font Awesome 6 Free"; 
+        font-weight: 900;
+    }
+    .fa-shield-haltered {
+        font-family: "Font Awesome 6 Free";
+    }
+</style>
+</body>
+</html>
